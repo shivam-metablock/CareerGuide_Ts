@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+
+}
+
+enum Stream {
+  Science
+  Commerce
+  Arts
+}
+
+enum EducationLevel {
+  Class10
+  Stream
+  Graduation
+  PostGraduation
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isPaid       Boolean  @default(false)
+  planStart    DateTime?
+  planEnd      DateTime?
+  other        Json?
+  isAdmin      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  plans        Plan[]
+
+  @@index([email])
+}
+
+model Plan {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  planName  String
+  count     Int      @default(0)
+  startTime DateTime?
+  endTime   DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([email])
+}
+
+model Career {
+  id          String   @id @default(uuid())
+  name        String @unique
+  description String?
+  isPaid      Boolean  @default(false)
+  stream      Stream?
+  level       EducationLevel @default(Class10)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  salaryInsights SalaryInsight[]
+  coaching       CoachingCareer[]
+  
+  @@index([stream, level])
+}
+
+model SalaryInsight {
+  id          String   @id @default(uuid())
+  careerId    String
+  career      Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  year        Int      // Years into career (0-20)
+  minSalary   Float
+  avgSalary   Float
+  maxSalary   Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([careerId, year])
+  @@index([careerId])
+}
+
+model Coaching {
+  id          String   @id @default(uuid())
+  name        String @unique
+  description String?
+  website     String?
+  address     String
+  city        String
+  isPaid      Boolean  @default(false)
+  state       String
+  pincode     String?
+  phone       String?
+  email       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  careers     CoachingCareer[]
+  pgs         PG[]
+  
+  @@index([city, state])
+}
+
+model CoachingCareer {
+  id        String   @id @default(uuid())
+  coachingId String
+  careerId  String
+  coaching  Coaching @relation(fields: [coachingId], references: [id], onDelete: Cascade)
+  career    Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  
+  @@unique([coachingId, careerId])
+  @@index([coachingId])
+  @@index([careerId])
+}
+
+model College {
+  id          String   @id @default(uuid())
+  name        String @unique
+  description String?
+  website     String?
+  isPaid      Boolean  @default(false)
+  address     String
+  city        String
+  state       String
+  pincode     String?
+  phone       String?
+  email       String?
+  stream      Stream?
+  courses     String[]   // Array of courses like ["B.Tech", "MCA", "BBA"]
+  fees        Float?     // Annual fees
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  pgs         PG[]
+  
+  @@index([city, state, stream])
+}
+
+model PG {
+  id          String   @id @default(uuid())
+  name        String @unique
+  description String?
+  address     String
+  city        String
+  isPaid      Boolean  @default(false)
+  state       String
+  pincode     String?
+  ownerName   String
+  ownerPhone  String
+  ownerEmail  String?
+  monthlyRent Float
+  amenities   String[] // Array like ["WiFi", "AC", "Food"]
+  coachingId  String?
+  coaching    Coaching? @relation(fields: [coachingId], references: [id], onDelete: SetNull)
+  collegeId   String?
+  college     College?  @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  distance    Float?    // Distance in km from coaching/college
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([city, state])
+  @@index([coachingId])
+  @@index([collegeId])
+}
+
+model BudgetCalculation {
+  id          String   @id @default(uuid())
+  userId      String?  // For future user authentication
+  budgetType  String   // "College", "PG", "Both"
+  totalBudget Float
+  city        String?
+  state       String?
+  selectedCareers String[]
+  selectedCoachingIds String[]
+  selectedCollegeIds  String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model AIGuidance {
+  id          String   @id @default(uuid())
+  userId      String?  // For future user authentication
+  interests   String[]
+  strengths   String[]
+  goals       String[]
+  budget      Float?
+  location    String?
+  recommendedStream Stream?
+  recommendedCareers String[]
+  recommendedColleges String[]
+  recommendedCoaching String[]
+  recommendedPGs      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
