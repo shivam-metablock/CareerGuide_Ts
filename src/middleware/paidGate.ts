@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { cacheGet, cacheSet } from '../utils/redis';
+import { cacheGet, cacheSet } from '../utils/cache';
 import prisma from '../prisma/client';
 
 import { Stream } from '@prisma/client';
@@ -11,7 +11,7 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
         if (isPaid) {
             
             const cacheKey = `paid:${routeKey}-paid`;
-            const cached = await cacheGet(cacheKey);
+            const cached = cacheGet(cacheKey);
             if (cached) return res.json(cached);
             
             (req as any)._cacheKey = cacheKey;
@@ -22,7 +22,7 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
         switch (routeKey) {
             case 'class10': {
                 const cacheKey = `free:${routeKey}-free`;
-                const cached = await cacheGet(cacheKey);
+                const cached = cacheGet(cacheKey);
                 if (cached) return res.json(cached);
                 const data = await prisma.career.findMany({
                     where: {
@@ -31,7 +31,7 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
                     }
                 });
 
-                await cacheSet(`free:${routeKey}-free`,data)
+                cacheSet(`free:${routeKey}-free`,data);
             return res.json(data)
             }
             case 'streams': {
@@ -57,7 +57,7 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
             case "streams-Data": {
                 const { stream } = req.params;
                 const cacheKey = `free:${routeKey}-free-${stream}`;
-                const cached = await cacheGet(cacheKey);
+                const cached = cacheGet(cacheKey);
                 if (cached) return res.json(cached);
                 const data = await prisma.career.findMany({
                     where: {                            
@@ -77,13 +77,13 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
                         coaching:true,     
                     }
                 });
-                await cacheSet(`free:${routeKey}-free-${stream}`, data)
+                cacheSet(`free:${routeKey}-free-${stream}`, data);
                 return res.json(data)
             }
             case "streams-Data2": {
                 const { careerId } = req.params;
                 const cacheKey = `free:${routeKey}-free-${careerId}`;
-                const cached = await cacheGet(cacheKey);
+                const cached = cacheGet(cacheKey);
                 if (cached) return res.json(cached);
                 const career = await prisma.career.findUnique({
                     where: { id: careerId ,isPaid:false},
@@ -122,7 +122,7 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
                     },
                 },
                 );
-                await cacheSet(`free:${routeKey}-free-${careerId}`, career)
+                cacheSet(`free:${routeKey}-free-${careerId}`, career);
                 return res.json(career)
             }
             default:
@@ -134,6 +134,6 @@ export function paidGate(routeKey: 'class10' | 'streams' | 'colleges' | 'coachin
 export async function cachePaidResponse(req: Request, data: any) {
     const key = (req as any)._cacheKey as string | undefined;
     if (key) {
-        await cacheSet(key, data, 300);
+        cacheSet(key, data, 300);
     }
 }

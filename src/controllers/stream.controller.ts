@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../prisma/client';
 import { Stream } from '@prisma/client';
 import { cachePaidResponse } from '../middleware/paidGate';
-import { cacheSet } from '../utils/redis';
+import { cacheSet } from '../utils/cache';
 
 const streamDescriptions = {
   Science: 'Become an engineer, doctor, scientist, or work in technology and research.',
@@ -45,7 +45,7 @@ export const getStreamCareers = async (req: Request, res: Response) => {
         level: 'Stream',
       }
     });
-    await cacheSet(`paid:${stream}-paid`, careers);
+    cacheSet(`paid:${stream}-paid`, careers);
     res.json(careers);
   } catch (error) {
     console.error('Error fetching stream careers:', error);
